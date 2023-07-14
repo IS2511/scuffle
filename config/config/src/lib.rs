@@ -1,4 +1,107 @@
-#![doc = include_str!("../README.md")]
+//! A config library that sucks less.
+//!
+//! Comes with built-in support for parsing cli arguments, environment variables
+//! and files, without requiring you to write more than just the definition
+//! of your configuration structs.
+//!
+//! Another goal of this crate is to be extensible and allow you to write your
+//! own sources. You could, for example, implement a database or
+//! a remote service as a config source.
+//!
+//! # 🚀 Usage
+//!
+//! Since this crate is built on top of [serde](https://crates.io/crates/serde),
+//! please add serde as a dependency to your `Cargo.toml`.
+//!
+//! ```text
+//! $ cargo add serde --features derive
+//! ```
+//!
+//! After that, you can use the `#[derive(Config)]` macro call to derive the
+//! [`Config`](Config) trait for your configuration struct.
+//! All structs implementing [`Config`](Config) are also required to implement
+//! [`serde::Deserialize`](::serde::Deserialize).
+//!
+//! ```rust
+//! #[derive(config::Config, serde::Deserialize)]
+//! struct MyConfig {
+//!     // ...
+//! }
+//! ```
+//!
+//! Now you can use the [`ConfigBuilder`](ConfigBuilder) to parse your
+//! configuration from various sources and merge them together into your
+//! configuration struct.
+//!
+//! ```rust no_run
+//! # use config::sources;
+//!
+//! # #[derive(config::Config, serde::Deserialize)]
+//! # struct MyConfig {
+//! #     // ...
+//! # }
+//!
+//! fn main() -> Result<(), config::ConfigError> {
+//!     let mut builder = config::ConfigBuilder::new();
+//!     // From CLI arguments
+//!     builder.add_source(sources::CliSource::new()?);
+//!     // From environment variables
+//!     builder.add_source(sources::EnvSource::with_prefix("TEST")?);
+//!     // From config file
+//!     builder.add_source(sources::FileSource::with_path("config.toml")?);
+//!
+//!     // Build the final configuration
+//!     let config: MyConfig = builder.build()?;
+//!
+//!     // ...
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! Available default source, in the order they are used in the example above:
+//!
+//! - [`CliSource`](sources::CliSource): parses cli arguments using the
+//!   [`clap`](::clap) crate. You can call your executable with `--help`
+//!   to see the generated help message.
+//! - [`EnvSource`](sources::EnvSource): parses environment variables with the
+//!   given prefix.
+//! - [`FileSource`](sources::FileSource): parses the configuration from a file
+//!   with the given path. The file format will be detected automatically
+//!   at runtime. It can be TOML, YAML or JSON.
+//!
+//! Calling [`build`](ConfigBuilder::build) will query all sources and merge
+//! them together into your configuration struct.
+//! Sources added earlier take priority. This means that values from sources
+//! added later will **not** overwrite values from sources added earlier.
+//!
+//! ## Examples
+//!
+//! See the [examples](./../examples) folder for examples.
+//!
+//! # 🔧 Advanced
+//!
+//! ## Defining your own config source
+//!
+//! To define your own config source, you need to implement the
+//! [`Source`](Source) trait.
+//!
+//! This requires you to implement the [`get_key`](Source::get_key) method
+//! which returns a [`Value`](Value) for a given [`KeyPath`](KeyPath).
+//!
+//! That's it. It's as simple as that. Now you can add your source to a
+//! [`ConfigBuilder`](ConfigBuilder) and use it to retrieve your configuration.
+//!
+//! ## 🔬 How it works under the hood
+//!
+//! When your type implements the [`Config`](Config) trait, it supports getting
+//! its keys as a [`KeyGraph`](KeyGraph). This is a graph of all keys in
+//! that type. It's used by the [`ConfigBuilder`](ConfigBuilder) to retrieve
+//! the values from the added sources by iterating all keys.
+//!
+//! Please see the docs for [`Config`](Config),
+//! [`ConfigBuilder`](ConfigBuilder), [`Source`](Source)
+//! and [`KeyGraph`](KeyGraph) for more information.
 
 use std::collections::{btree_map, BTreeMap, BTreeSet};
 use std::iter;
