@@ -19,17 +19,16 @@ use crate::{Result, Value};
 ///
 /// `test.foo[0].bar`
 /// is represented as
-/// ```
+/// ```rust
 /// # use config::{KeyPathSegment, Value};
-/// # fn main() {
-/// # let repr =
+///
+/// # let _ =
 /// [
 ///     KeyPathSegment::Map { key: Value::String("test".to_string()) },
 ///     KeyPathSegment::Seq { index: 0 },
 ///     KeyPathSegment::Map { key: Value::String("bar".to_string()) }
 /// ]
 /// # ;
-/// # }
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct KeyPath {
@@ -285,7 +284,7 @@ impl<C: std::any::Any> KeyGraphBuilder<C> {
             return arc;
         }
 
-        // Safety: If building it means we are the only one
+        // Safety: If we are building it means we are the only one
         // who is allowed to mutate the graph. We also know the graph is thread_local so
         // no other thread can access it. This function also takes ownership of the graph builder.
         // Which means that no other thread can access the graph builder, and also this function will not
@@ -389,8 +388,10 @@ impl KeyGraph {
                     return KeyGraphBuilder {
                         graph,
                         // This check here does 2 things:
-                        // 1) Allows for graph memoization (we dont have to rebuild a graph if we already have one for this type) (if building is false)
-                        // 2) Allows for recursive types (if building is true, we have not finished building the graph yet but a type has requested it, so we return a reference to the graph)
+                        // 1) Allows for graph memoization (we dont have to rebuild a graph if
+                        //    we already have one for this type (if building is false) )
+                        // 2) Allows for recursive types (if building is true, we have not finished
+                        //    building the graph yet but a type has requested it so we return a reference to the graph)
                         mode: if *building {
                             BuilderMode::Ref
                         } else {
@@ -401,7 +402,7 @@ impl KeyGraph {
                 }
             }
 
-            // If the type isnt in the map or the graph is dead, we need to build it
+            // If the type isn't in the map or the graph is dead, we need to build it
             // We also need to set building to true so that recursive types work
 
             // Dummy value does not matter
