@@ -747,8 +747,8 @@ impl Config for SystemTime {
 // Compound Types
 
 macro_rules! impl_slice {
-    ($size:expr) => {
-        impl<C: Config> Config for [C; $size] {
+    ($($size:literal),+) => {
+        $(impl<C: Config> Config for [C; $size] {
             #[inline(always)]
             fn graph() -> Arc<KeyGraph> {
                 seq_graph::<C>()
@@ -782,11 +782,7 @@ macro_rules! impl_slice {
                     ))).with_path(path.clone())),
                 }
             }
-        }
-    };
-    ($size:expr, $($rest:expr),+) => {
-        impl_slice!($size);
-        impl_slice!($($rest),+);
+        })+
     };
 }
 
