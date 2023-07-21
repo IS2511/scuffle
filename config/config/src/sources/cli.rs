@@ -36,51 +36,29 @@ fn extend_cmd(
     path: &KeyPath,
     sequenced: bool,
 ) -> Result<(Option<Arg>, Command)> {
+    macro_rules! default_value_parser {
+        ($t:ty) => {
+            (
+                Some(arg.unwrap().value_parser(clap::value_parser!($t))),
+                cmd,
+            )
+        };
+    }
+
     Ok(match graph {
-        KeyGraph::String => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(String))),
-            cmd,
-        ),
-        KeyGraph::I8 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(i8))),
-            cmd,
-        ),
-        KeyGraph::I16 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(i16))),
-            cmd,
-        ),
-        KeyGraph::I32 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(i32))),
-            cmd,
-        ),
-        KeyGraph::I64 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(i64))),
-            cmd,
-        ),
-        KeyGraph::U8 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(u8))),
-            cmd,
-        ),
-        KeyGraph::U16 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(u16))),
-            cmd,
-        ),
-        KeyGraph::U32 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(u32))),
-            cmd,
-        ),
-        KeyGraph::U64 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(u64))),
-            cmd,
-        ),
-        KeyGraph::F32 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(f32))),
-            cmd,
-        ),
-        KeyGraph::F64 => (
-            Some(arg.unwrap().value_parser(clap::value_parser!(f64))),
-            cmd,
-        ),
+        KeyGraph::String => default_value_parser!(String),
+
+        KeyGraph::I8 => default_value_parser!(i8),
+        KeyGraph::I16 => default_value_parser!(i16),
+        KeyGraph::I32 => default_value_parser!(i32),
+        KeyGraph::I64 => default_value_parser!(i64),
+        KeyGraph::U8 => default_value_parser!(u8),
+        KeyGraph::U16 => default_value_parser!(u16),
+        KeyGraph::U32 => default_value_parser!(u32),
+        KeyGraph::U64 => default_value_parser!(u64),
+        KeyGraph::F32 => default_value_parser!(f32),
+        KeyGraph::F64 => default_value_parser!(f64),
+
         KeyGraph::Bool => (
             Some(
                 arg.unwrap()
@@ -296,17 +274,33 @@ fn matches_to_value(
 ) -> Result<Option<Value>> {
     let id = path.to_string();
 
-    match graph {
-        KeyGraph::Bool => {
+    macro_rules! simple_value_match {
+        ($t:ty => $value_container:path) => {{
             if sequenced {
                 Ok(matches
-                    .get_many::<bool>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::Bool(*s)).collect())
+                    .get_many::<$t>(&id)
+                    .map(|s| s.into_iter().map(|s| $value_container(*s)).collect())
                     .map(Value::Seq))
             } else {
-                Ok(matches.get_one::<bool>(&id).map(|s| Value::Bool(*s)))
+                Ok(matches.get_one::<$t>(&id).map(|s| $value_container(*s)))
             }
-        }
+        }};
+    }
+
+    match graph {
+        KeyGraph::Bool => simple_value_match!(bool => Value::Bool),
+
+        KeyGraph::I8 => simple_value_match!(i8  => Value::I8),
+        KeyGraph::I16 => simple_value_match!(i16 => Value::I16),
+        KeyGraph::I32 => simple_value_match!(i32 => Value::I32),
+        KeyGraph::I64 => simple_value_match!(i64 => Value::I64),
+        KeyGraph::U8 => simple_value_match!(u8  => Value::U8),
+        KeyGraph::U16 => simple_value_match!(u16 => Value::U16),
+        KeyGraph::U32 => simple_value_match!(u32 => Value::U32),
+        KeyGraph::U64 => simple_value_match!(u64 => Value::U64),
+        KeyGraph::F32 => simple_value_match!(f32 => Value::F32),
+        KeyGraph::F64 => simple_value_match!(f64 => Value::F64),
+
         KeyGraph::String => {
             if sequenced {
                 Ok(matches
@@ -321,106 +315,6 @@ fn matches_to_value(
                 Ok(matches
                     .get_one::<String>(&id)
                     .map(|s| Value::String(s.to_string())))
-            }
-        }
-        KeyGraph::I8 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<i8>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::I8(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<i8>(&id).map(|s| Value::I8(*s)))
-            }
-        }
-        KeyGraph::I16 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<i16>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::I16(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<i16>(&id).map(|s| Value::I16(*s)))
-            }
-        }
-        KeyGraph::I32 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<i32>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::I32(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<i32>(&id).map(|s| Value::I32(*s)))
-            }
-        }
-        KeyGraph::I64 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<i64>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::I64(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<i64>(&id).map(|s| Value::I64(*s)))
-            }
-        }
-        KeyGraph::U8 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<u8>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::U8(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<u8>(&id).map(|s| Value::U8(*s)))
-            }
-        }
-        KeyGraph::U16 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<u16>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::U16(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<u16>(&id).map(|s| Value::U16(*s)))
-            }
-        }
-        KeyGraph::U32 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<u32>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::U32(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<u32>(&id).map(|s| Value::U32(*s)))
-            }
-        }
-        KeyGraph::U64 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<u64>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::U64(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<u64>(&id).map(|s| Value::U64(*s)))
-            }
-        }
-        KeyGraph::F32 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<f32>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::F32(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<f32>(&id).map(|s| Value::F32(*s)))
-            }
-        }
-        KeyGraph::F64 => {
-            if sequenced {
-                Ok(matches
-                    .get_many::<f64>(&id)
-                    .map(|s| s.into_iter().map(|s| Value::F64(*s)).collect())
-                    .map(Value::Seq))
-            } else {
-                Ok(matches.get_one::<f64>(&id).map(|s| Value::F64(*s)))
             }
         }
         KeyGraph::Unit => {
